@@ -12,15 +12,25 @@ function App() {
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8080')
 
+    // quand le serveur accepte la connexion, on met connected à true
     ws.current.onopen = () => setConnected(true)
 
+    // quand le serveur envoie des données, on les parse en JSON puis on ajoute le message à messages
     ws.current.onmessage = (e) => {
       const msg = JSON.parse(e.data)
       setMessages((prev) => [...prev, msg])
     }
 
+    // si la connexion WebSocket échoue, on affiche l'erreur et on met connected à false
+    ws.current.onerror = (error) => {
+      console.error('Erreur WebSocket :', error)
+      setConnected(false)
+    }
+
+    // quand le serveur ferme la connexion, on met connected à false
     ws.current.onclose = () => setConnected(false)
 
+    // nettoyage quand le composant est détruit
     return () => ws.current.close()
   }, [])
 
@@ -29,14 +39,18 @@ function App() {
   }, [messages])
 
   const sendMessage = () => {
+
+    // Vérifie que le pseudo et le message ne sont pas vides avant d'envoyer
     if (!input.trim() || !username.trim()) return
 
+    // Crée un objet message avec le pseudo, le texte et l'heure actuelle
     const msg = {
       user: username,
       text: input,
       time: new Date().toLocaleTimeString(),
     }
 
+    // Envoie le message au serveur WebSocket sous forme de chaîne JSON
     ws.current.send(JSON.stringify(msg))
     setInput('')
   }
